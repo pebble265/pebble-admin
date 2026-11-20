@@ -1,3 +1,33 @@
-# pebble(a) admin log viewer
+# pebble(a) · Admin log viewer
 
-Static page that reads robot logs from ThingsBoard. Sign in with a ThingsBoard account; no secrets are stored here.
+A single static page (`index.html`, no build step) that reads the robot's logs straight from
+**ThingsBoard** (`https://demo.thingsboard.io` by default):
+
+- **อุปกรณ์**: every device, online/offline, last activity / connect / disconnect
+- **Telemetry**: every key the robot sends, by time range, as charts + a table
+- **Alarms**: active and cleared alarms with severity
+- **Export CSV** on every tab (opens in Excel with Thai text intact)
+
+## Who can get in
+
+You sign in with a **ThingsBoard account** (Tenant admin, or a Customer user for that
+customer's devices). The site holds no passwords or keys: the ThingsBoard token is kept in the
+browser's sessionStorage and is gone when the tab closes. Anyone without a ThingsBoard login sees
+only the sign-in form. The page is marked `noindex` so search engines skip it.
+
+Another ThingsBoard server can be chosen under "เซิร์ฟเวอร์" on the sign-in form.
+
+## Hosting (GitHub Pages)
+
+`.github/workflows/admin-pages.yml` publishes this folder on every push to `main` that changes it.
+
+One-time setup on GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+The site is then at `https://<user>.github.io/<repo>/` (here: `https://thanakron-spu.github.io/pebble/`).
+
+Pages on a **private** repository needs GitHub Pro (free with the GitHub Student Developer Pack).
+
+## Trying it locally
+
+```bash
+cd apps/admin && python3 -m http.server 8091   # then open http://localhost:8091
+```

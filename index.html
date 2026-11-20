@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>pebble(a) · Admin logs</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%233D8BF7'/%3E%3Cpath d='M10 15q2 2 4 0M18 15q2 2 4 0' stroke='white' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #F2F2F5; --surface: #FFFFFF; --fill: #F4F4F7; --line: #E9E9EE; --ink: #0B0B0F; --muted: #7C7C84; --faint: #A6A6AB;
+    --blue: #3D8BF7; --blue-soft: #E3EEFF; --red: #E5484D; --red-soft: #FDECEA; --green: #2F9E44; --green-soft: #E6F6EA;
+    --amber: #B54708; --amber-soft: #FEF3E2; --shadow: 0 6px 24px rgba(20,20,40,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0B0B0D; --surface: #1C1C1F; --fill: #26262A; --line: #2E2E33; --ink: #F5F5F7; --muted: #9A9AA2; --faint: #6E6E75;
+      --blue: #4D97FA; --blue-soft: #1B2A44; --red: #FF6B5E; --red-soft: #3A1D1B; --green: #43C35E; --green-soft: #17301E;
+      --amber: #F5A524; --amber-soft: #3A2A12; --shadow: 0 6px 24px rgba(0,0,0,.4); }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", "Sarabun", sans-serif; }
+  button, input, select { font: inherit; color: inherit; }
+  .hidden { display: none !important; }
+  a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+  .muted { color: var(--muted); }
+  .faint { color: var(--faint); }
+
+  /* login */
+  #login { min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(60% 40% at 20% 0%, rgba(61,139,247,.18), transparent), radial-gradient(50% 40% at 100% 100%, rgba(229,72,77,.12), transparent), var(--bg); }
+  .login-card { width: 100%; max-width: 380px; background: var(--surface); border-radius: 24px; padding: 28px; box-shadow: var(--shadow); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -.3px; }
+  .face { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #9ED8FF, #3D8BF7 55%, #1E4FD6); position: relative; flex: none; }
+  .face::before, .face::after { content: ""; position: absolute; top: 14px; width: 7px; height: 4px; border: 2px solid #fff; border-top: 0; border-radius: 0 0 8px 8px; }
+  .face::before { left: 8px; } .face::after { right: 8px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
+  input[type=text], input[type=password], input[type=email], input[type=url], input[type=datetime-local], select {
+    width: 100%; height: 42px; border: 1px solid var(--line); background: var(--fill); border-radius: 12px; padding: 0 12px; outline: none; }
+  input:focus, select:focus { border-color: var(--blue); }
+  .btn { height: 40px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--ink); color: var(--surface); font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.ghost { background: var(--fill); color: var(--ink); }
+  .btn.blue { background: var(--blue); color: #fff; }
+  .btn.small { height: 32px; padding: 0 12px; font-size: 13px; }
+  .err { color: var(--red); font-size: 13px; margin-top: 10px; min-height: 1em; }
+  details.server { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  details.server summary { cursor: pointer; }
+
+  /* app */
+  header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px);
+    display: flex; align-items: center; gap: 16px; padding: 12px 24px; border-bottom: 1px solid var(--line); }
+  header .spacer { flex: 1; }
+  .who { font-size: 13px; color: var(--muted); text-align: right; line-height: 1.25; }
+  nav.tabs { display: flex; gap: 4px; background: var(--fill); border-radius: 999px; padding: 4px; }
+  nav.tabs button { border: 0; background: transparent; border-radius: 999px; padding: 6px 14px; cursor: pointer; color: var(--muted); font-weight: 600; }
+  nav.tabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 16px; }
+  .toolbar .field { min-width: 160px; }
+  .toolbar label { margin-top: 0; }
+  .card { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .dev { cursor: pointer; transition: transform .1s; border: 2px solid transparent; }
+  .dev:hover { transform: translateY(-1px); }
+  .dev.sel { border-color: var(--blue); }
+  .dev h3 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--faint); flex: none; }
+  .dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin-top: 10px; font-size: 12.5px; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; text-align: right; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill.green { background: var(--green-soft); color: var(--green); } .pill.grey { background: var(--fill); color: var(--muted); }
+  .pill.red { background: var(--red-soft); color: var(--red); } .pill.amber { background: var(--amber-soft); color: var(--amber); }
+  .pill.blue { background: var(--blue-soft); color: var(--blue); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; cursor: pointer; font-size: 13px; }
+  .chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 600; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-variant-numeric: tabular-nums; }
+  tr:hover td { background: var(--fill); }
+  .scroll { max-height: 60vh; overflow: auto; border-radius: 12px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-bottom: 14px; }
+  .chart h4 { margin: 0 0 6px; font-size: 13px; display: flex; justify-content: space-between; }
+  .chart svg { width: 100%; height: 150px; display: block; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  .spin { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--blue); border-radius: 50%; animation: s .8s linear infinite; display: inline-block; vertical-align: middle; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .section-title { font-size: 13px; color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  @media (max-width: 700px) { header { flex-wrap: wrap; padding: 10px 14px; } main { padding: 14px; } .who { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ===================== Login ===================== -->
+<section id="login" class="hidden">
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <div class="brand"><span class="face"></span>pebble(a) <span class="muted" style="font-weight:500">· Admin</span></div>
+    <p class="muted" style="margin:10px 0 0">ดู log ของหุ่น pebble(a) จาก ThingsBoard เข้าสู่ระบบด้วยบัญชี ThingsBoard ของคุณ</p>
+    <label for="u">อีเมล ThingsBoard</label>
+    <input id="u" type="email" autocomplete="username" required />
+    <label for="p">รหัสผ่าน</label>
+    <input id="p" type="password" autocomplete="current-password" required />
+    <details class="server">
+      <summary>เซิร์ฟเวอร์: <span id="serverLabel"></span></summary>
+      <label for="srv">ThingsBoard URL</label>
+      <input id="srv" type="url" placeholder="https://demo.thingsboard.io" />
+    </details>
+    <div class="err" id="loginErr"></div>
+    <button class="btn blue" style="width:100%;justify-content:center;margin-top:6px" id="loginBtn" type="submit">เข้าสู่ระบบ</button>
+    <p class="note">ไม่มีรหัสผ่านถูกเก็บไว้ในเว็บนี้ ระบบจำการเข้าสู่ระบบไว้แค่จนกว่าจะปิดแท็บ</p>
+  </form>
+</section>
+
+<!-- ===================== App ===================== -->
+<section id="app" class="hidden">
+  <header>
+    <div class="brand"><span class="face"></span><span>pebble(a)</span></div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="devices" class="on">อุปกรณ์</button>
+      <button data-tab="telemetry">Telemetry</button>
+      <button data-tab="alarms">Alarms</button>
+    </nav>
+    <div class="spacer"></div>
+    <label class="row" style="margin:0;color:var(--muted);font-size:13px;cursor:pointer"><input type="checkbox" id="auto" /> รีเฟรชทุก 30 วิ</label>
+    <div class="who" id="who"></div>
+    <button class="btn ghost small" id="logout">ออกจากระบบ</button>
+  </header>
+
+  <main>
+    <!-- devices + activity -->
+    <div id="tab-devices">
+      <div class="toolbar">
+        <div class="field" style="flex:1;min-width:220px"><label for="devSearch">ค้นหาอุปกรณ์</label><input id="devSearch" type="text" placeholder="ชื่อ หรือประเภท" /></div>
+        <button class="btn ghost" id="reloadDevices">รีเฟรช</button>
+        <button class="btn ghost" id="csvDevices">Export CSV</button>
+      </div>
+      <div id="devSummary" class="row" style="margin-bottom:12px;gap:8px"></div>
+      <div id="devices" class="grid"></div>
+      <p class="note">แตะที่อุปกรณ์เพื่อดู Telemetry และ Alarms ของเครื่องนั้น สถานะออนไลน์และเวลาเชื่อมต่อมาจาก attribute ของ ThingsBoard (active, lastActivityTime, lastConnectTime, lastDisconnectTime)</p>
+    </div>
+
+    <!-- telemetry -->
+    <div id="tab-telemetry" class="hidden">
+      <div class="toolbar">
+        <div class="field"><label for="tDev">อุปกรณ์</label><select id="tDev"></select></div>
+        <div class="field"><label for="tRange">ช่วงเวลา</label>
+          <select id="tRange"><option value="3600000">1 ชั่วโมง</option><option value="86400000" selected>24 ชั่วโมง</option><option value="604800000">7 วัน</option><option value="2592000000">30 วัน</option><option value="custom">กำหนดเอง</option></select></div>
+        <div class="field custom hidden"><label for="tFrom">ตั้งแต่</label><input id="tFrom" type="datetime-local" /></div>
+        <div class="field custom hidden"><label for="tTo">ถึง</label><input id="tTo" type="datetime-local" /></div>
+        <button class="btn blue" id="tLoad">โหลด</button>
+        <button class="btn ghost" id="csvTelemetry">Export CSV</button>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong>Keys</strong><span class="muted" style="font-size:12px"><a href="#" id="keysAll">เลือกทั้งหมด</a> · <a href="#" id="keysNone">ไม่เลือก</a></span></div>
+        <div class="chips" id="keys"></div>
+      </div>
+      <div id="charts" class="charts"></div>
+      <div class="card"><div class="scroll" id="tTable"></div></div>
+    </div>
+
+    <!-- alarms -->
+    <div id="tab-alarms" class="hidden">
+      <div class="toolbar">
+        <div class="field"><label for="aDev">อุปกรณ์</label><select id="aDev"><option value="*">ทุกเครื่อง</option></select></div>
+        <div class="field"><label for="aStatus">สถานะ</label>
+          <select id="aStatus"><option value="all">ทั้งหมด</option><option value="active">Active</option><option value="cleared">Cleared</option></select></div>
+        <div class="field"><label for="aRange">ช่วงเวลา</label>
+          <select id="aRange"><option value="86400000">24 ชั่วโมง</option><option value="604800000" selected>7 วัน</option><option value="2592000000">30 วัน</option><option value="0">ทั้งหมด</option></select></div>
+        <button class="btn blue" id="aLoad">โหลด</button>
+        <button class="btn ghost" id="csvAlarms">Export CSV</button>
+      </div>
+      <div class="card"><div class="scroll" id="aTable"></div></div>
+    </div>
+  </main>
+</section>
+
+<script>
+'use strict';
+/* =====================================================================
+   pebble(a) admin log viewer — reads ThingsBoard's REST API in the browser.
+   Nothing secret lives in this file: you sign in with your ThingsBoard
+   account, and the token is kept in sessionStorage until the tab closes.
+   ===================================================================== */
+const DEFAULT_SERVER = 'https://demo.thingsboard.io';
+const S = sessionStorage;
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (ts) => (ts ? new Date(Number(ts)).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'medium' }) : '–');
+const ago = (ts) => {
+  if (!ts) return '–';
+  const s = Math.round((Date.now() - Number(ts)) / 1000);
+  if (s < 60) return `${s} วินาทีที่แล้ว`;
+  if (s < 3600) return `${Math.round(s / 60)} นาทีที่แล้ว`;
+  if (s < 86400) return `${Math.round(s / 3600)} ชั่วโมงที่แล้ว`;
+  return `${Math.round(s / 86400)} วันที่แล้ว`;
+};
+
+const state = { server: S.getItem('tb.server') || localStorage.getItem('tb.server') || DEFAULT_SERVER, user: null, devices: [], activity: {}, telemetry: null, alarms: [] };
+
+// ---------------------------------------------------------------- API
+class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+
+async function api(path, opts = {}, retried = false) {
+  const token = S.getItem('tb.token');
+  let res;
+  try {
+    res = await fetch(state.server + path, {
+      method: opts.method || 'GET',
+      headers: { 'Content-Type': 'application/json', ...(token && !opts.noAuth ? { 'X-Authorization': 'Bearer ' + token } : {}) },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, 'ติดต่อ ThingsBoard ไม่ได้ (เช็กอินเทอร์เน็ต หรือเซิร์ฟเวอร์อาจไม่อนุญาตเว็บนี้ — CORS)');
+  }
+  if (res.status === 401 && !opts.noAuth && !retried && (await refresh())) return api(path, opts, true);
+  if (res.status === 401 && !opts.noAuth) { signOut('หมดเวลาเข้าสู่ระบบ เข้าใหม่อีกครั้ง'); throw new ApiError(401, 'Unauthorized'); }
+  if (!res.ok) {
+    let msg = res.statusText;
+    try { msg = (await res.json()).message || msg; } catch {}
+    throw new ApiError(res.status, msg);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function refresh() {
+  const refreshToken = S.getItem('tb.refresh');
+  if (!refreshToken) return false;
+  try {
+    const t = await api('/api/auth/token', { method: 'POST', body: { refreshToken }, noAuth: true });
+    S.setItem('tb.token', t.token);
+    S.setItem('tb.refresh', t.refreshToken);
+    return true;
+  } catch { return false; }
+}
+
+/** Every page of a ThingsBoard page-link endpoint. */
+async function allPages(path, cap = 20) {
+  const out = [];
+  for (let page = 0; page < cap; page++) {
+    const sep = path.includes('?') ? '&' : '?';
+    const r = await api(`${path}${sep}pageSize=100&page=${page}`);
+    out.push(...(r.data || []));
+    if (!r.hasNext) break;
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- auth
+$('serverLabel').textContent = state.server.replace(/^https?:\/\//, '');
+$('srv').value = state.server;
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('loginErr').textContent = '';
+  const srv = ($('srv').value.trim() || DEFAULT_SERVER).replace(/\/+$/, '');
+  state.server = srv;
+  localStorage.setItem('tb.server', srv);
+  $('loginBtn').disabled = true;
+  $('loginBtn').innerHTML = '<span class="spin"></span>';
+  try {
+    const t = await api('/api/auth/login', { method: 'POST', body: { username: $('u').value.trim(), password: $('p').value }, noAuth: true });
+    S.setItem('tb.token', t.token);
+    S.setItem('tb.refresh', t.refreshToken);
+    S.setItem('tb.server', srv);
+    $('p').value = '';
+    await start();
+  } catch (err) {
+    $('loginErr').textContent = err.status === 401 ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : err.message;
+  } finally {
+    $('loginBtn').disabled = false;
+    $('loginBtn').textContent = 'เข้าสู่ระบบ';
+  }
+});
+
+function signOut(msg) {
+  ['tb.token', 'tb.refresh'].forEach((k) => S.removeItem(k));
+  stopAuto();
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+  $('loginErr').textContent = msg || '';
+}
+$('logout').addEventListener('click', () => signOut());
+
+async function start() {
+  state.user = await api('/api/auth/user');
+  if (state.user.authority === 'SYS_ADMIN') {
+    signOut('บัญชี System admin ไม่เห็นอุปกรณ์ ใช้บัญชี Tenant admin หรือ Customer user แทน');
+    return;
+  }
+  $('who').innerHTML = `${esc([state.user.firstName, state.user.lastName].filter(Boolean).join(' ') || state.user.email)}<br><span class="faint">${esc(state.user.authority === 'TENANT_ADMIN' ? 'Tenant admin' : 'Customer user')} · ${esc(state.server.replace(/^https?:\/\//, ''))}</span>`;
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  await loadDevices();
+}
+
+// ---------------------------------------------------------------- tabs
+let tab = 'devices';
+$('tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) showTab(b.dataset.tab);
+});
+function showTab(name) {
+  tab = name;
+  document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x.dataset.tab === name));
+  ['devices', 'telemetry', 'alarms'].forEach((t) => $('tab-' + t).classList.toggle('hidden', t !== name));
+  if (name === 'telemetry' && !state.telemetry) loadKeys();
+  if (name === 'alarms' && !state.alarmsLoaded) loadAlarms();
+}
+
+// ---------------------------------------------------------------- devices + activity
+async function loadDevices() {
+  $('devices').innerHTML = '<div class="empty"><span class="spin"></span></div>';
+  try {
+    const path = state.user.authority === 'TENANT_ADMIN'
+      ? '/api/tenant/deviceInfos?sortProperty=name&sortOrder=ASC'
+      : `/api/customer/${state.user.customerId.id}/deviceInfos?sortProperty=name&sortOrder=ASC`;
+    state.devices = await allPages(path);
+    await Promise.all(state.devices.map(async (d) => {
+      try {
+        const attrs = await api(`/api/plugins/telemetry/DEVICE/${d.id.id}/values/attributes/SERVER_SCOPE?keys=active,lastActivityTime,lastConnectTime,lastDisconnectTime`);
+        state.activity[d.id.id] = Object.fromEntries(attrs.map((a) => [a.key, a.value]));
+      } catch { state.activity[d.id.id] = {}; }
+    }));
+    fillDeviceSelects();
+    renderDevices();
+  } catch (err) {
+    $('devices').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+const isOnline = (d) => {
+  const a = state.activity[d.id.id] || {};
+  return a.active === true || a.active === 'true' || (a.active === undefined && d.active === true);
+};
+
+function renderDevices() {
+  const q = $('devSearch').value.trim().toLowerCase();
+  const list = state.devices.filter((d) => !q || `${d.name} ${d.type} ${d.label || ''}`.toLowerCase().includes(q));
+  const on = state.devices.filter(isOnline).length;
+  $('devSummary').innerHTML = `<span class="pill blue">${state.devices.length} อุปกรณ์</span><span class="pill green">${on} ออนไลน์</span><span class="pill grey">${state.devices.length - on} ออฟไลน์</span>`;
+  if (!list.length) { $('devices').innerHTML = `<div class="empty">${state.devices.length ? 'ไม่พบอุปกรณ์ที่ค้นหา' : 'บัญชีนี้ยังไม่มีอุปกรณ์'}</div>`; return; }
+  $('devices').innerHTML = list.map((d) => {
+    const a = state.activity[d.id.id] || {};
+    const online = isOnline(d);
+    return `<div class="card dev ${d.id.id === state.selected ? 'sel' : ''}" data-id="${esc(d.id.id)}">
+      <h3><span class="dot ${online ? 'on' : ''}"></span>${esc(d.label || d.name)}</h3>
+      <div class="muted" style="font-size:12px">${esc(d.name)} · ${esc(d.type)}</div>
+      <dl class="kv">
+        <dt>สถานะ</dt><dd>${online ? '<span class="pill green">ออนไลน์</span>' : '<span class="pill grey">ออฟไลน์</span>'}</dd>
+        <dt>ส่งข้อมูลล่าสุด</dt><dd title="${esc(fmt(a.lastActivityTime))}">${esc(ago(a.lastActivityTime))}</dd>
+        <dt>เชื่อมต่อล่าสุด</dt><dd>${esc(fmt(a.lastConnectTime))}</dd>
+        <dt>หลุดล่าสุด</dt><dd>${esc(fmt(a.lastDisconnectTime))}</dd>
+      </dl>
+    </div>`;
+  }).join('');
+}
+$('devSearch').addEventListener('input', renderDevices);
+$('reloadDevices').addEventListener('click', loadDevices);
+$('devices').addEventListener('click', (e) => {
+  const c = e.target.closest('.dev');
+  if (!c) return;
+  state.selected = c.dataset.id;
+  $('tDev').value = c.dataset.id;
+  $('aDev').value = c.dataset.id;
+  state.telemetry = null;
+  state.alarmsLoaded = false;
+  showTab('telemetry');
+});
+$('csvDevices').addEventListener('click', () => {
+  csv('devices', ['name', 'label', 'type', 'online', 'lastActivity', 'lastConnect', 'lastDisconnect'], state.devices.map((d) => {
+    const a = state.activity[d.id.id] || {};
+    return [d.name, d.label || '', d.type, isOnline(d) ? 'online' : 'offline', iso(a.lastActivityTime), iso(a.lastConnectTime), iso(a.lastDisconnectTime)];
+  }));
+});
+
+function fillDeviceSelects() {
+  const opts = state.devices.map((d) => `<option value="${esc(d.id.id)}">${esc(d.label || d.name)}</option>`).join('');
+  const t = $('tDev').value, a = $('aDev').value;
+  $('tDev').innerHTML = opts;
+  $('aDev').innerHTML = '<option value="*">ทุกเครื่อง</option>' + opts;
+  if (t) $('tDev').value = t;
+  if (a) $('aDev').value = a;
+  if (!state.selected && state.devices[0]) state.selected = state.devices[0].id.id;
+}
+
+// ---------------------------------------------------------------- telemetry
+let selectedKeys = new Set();
+$('tDev').addEventListener('change', () => { state.selected = $('tDev').value; state.telemetry = null; loadKeys(); });
+$('tRange').addEventListener('change', () => {
+  document.querySelectorAll('.custom').forEach((x) => x.classList.toggle('hidden', $('tRange').value !== 'custom'));
+  if ($('tRange').value === 'custom' && !$('tFrom').value) {
+    const local = (ms) => new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    $('tFrom').value = local(Date.now() - 86400000);
+    $('tTo').value = local(Date.now());
+  }
+});
+$('tLoad').addEventListener('click', loadTelemetry);
+$('keysAll').addEventListener('click', (e) => { e.preventDefault(); selectedKeys = new Set(state.keys || []); renderKeys(); });
+$('keysNone').addEventListener('click', (e) => { e.preventDefault(); selectedKeys.clear(); renderKeys(); });
+$('keys').addEventListener('click', (e) => {
+  const c = e.target.closest('.chip');
+  if (!c) return;
+  selectedKeys.has(c.dataset.k) ? selectedKeys.delete(c.dataset.k) : selectedKeys.add(c.dataset.k);
+  renderKeys();
+});
+
+async function loadKeys() {
+  const id = $('tDev').value || state.selected;
+  if (!id) { $('tTable').innerHTML = '<div class="empty">ยังไม่มีอุปกรณ์</div>'; return; }
+  $('keys').innerHTML = '<span class="spin"></span>';
+  try {
+    state.keys = (await api(`/api/plugins/telemetry/DEVICE/${id}/keys/timeseries`)) || [];
+    selectedKeys = new Set(state.keys);
+    renderKeys();
+    await loadTelemetry();
+  } catch (err) {
+    $('keys').innerHTML = `<span class="muted">${esc(err.message)}</span>`;
+  }
+}
+
+function renderKeys() {
+  $('keys').innerHTML = (state.keys || []).length
+    ? state.keys.map((k) => `<span class="chip ${selectedKeys.has(k) ? 'on' : ''}" data-k="${esc(k)}">${esc(k)}</span>`).join('')
+    : '<span class="muted">อุปกรณ์นี้ยังไม่เคยส่ง telemetry</span>';
+}
+
+function range(selectId, fromId, toId) {
+  const v = $(selectId).value;
+  if (v === 'custom') return [new Date($(fromId).value).getTime(), new Date($(toId).value).getTime()];
+  const end = Date.now();
+  return [Number(v) ? end - Number(v) : 0, end];
+}
+
+async function loadTelemetry() {
+  const id = $('tDev').value;
+  const keys = [...selectedKeys];
+  if (!id || !keys.length) { state.telemetry = { keys: [], rows: [] }; renderTelemetry(); return; }
+  const [startTs, endTs] = range('tRange', 'tFrom', 'tTo');
+  if (!(startTs < endTs)) { $('tTable').innerHTML = '<div class="empty">ช่วงเวลาไม่ถูกต้อง</div>'; return; }
+  $('tTable').innerHTML = '<div class="empty"><span class="spin"></span></div>';
+  try {
+    const data = await api(`/api/plugins/telemetry/DEVICE/${id}/values/timeseries?keys=${encodeURIComponent(keys.join(','))}&startTs=${startTs}&endTs=${endTs}&limit=5000&agg=NONE&orderBy=DESC&useStrictDataTypes=false`);
+    const byTs = new Map();
+    for (const k of keys) for (const p of data[k] || []) {
+      if (!byTs.has(p.ts)) byTs.set(p.ts, { ts: p.ts });
+      byTs.get(p.ts)[k] = p.value;
+    }
+    state.telemetry = { keys, rows: [...byTs.values()].sort((a, b) => b.ts - a.ts), series: data, startTs, endTs };
+    renderTelemetry();
+  } catch (err) {
+    $('tTable').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+function renderTelemetry() {
+  const t = state.telemetry;
+  if (!t || !t.rows.length) {
+    $('charts').innerHTML = '';
+    $('tTable').innerHTML = '<div class="empty">ไม่มีข้อมูลในช่วงเวลานี้</div>';
+    return;
+  }
+  // a small chart for every key whose values are numbers
+  const numeric = t.keys.filter((k) => (t.series[k] || []).length > 1 && t.series[k].every((p) => p.value !== '' && !isNaN(Number(p.value))));
+  $('charts').innerHTML = numeric.map((k, i) => chart(k, t.series[k], t.startTs, t.endTs, i)).join('');
+  const shown = t.rows.slice(0, 1000);
+  $('tTable').innerHTML = `<table><thead><tr><th>เวลา</th>${t.keys.map((k) => `<th>${esc(k)}</th>`).join('')}</tr></thead><tbody>${
+    shown.map((r) => `<tr><td style="white-space:nowrap">${esc(fmt(r.ts))}</td>${t.keys.map((k) => `<td>${esc(r[k] ?? '')}</td>`).join('')}</tr>`).join('')
+  }</tbody></table>${t.rows.length > shown.length ? `<p class="note" style="padding:0 10px">แสดง 1,000 แถวล่าสุดจาก ${t.rows.length.toLocaleString()} แถว (Export CSV ได้ทั้งหมด)</p>` : ''}`;
+}
+
+const COLORS = ['#3D8BF7', '#E5484D', '#2F9E44', '#F5A524', '#8E6CEF', '#0EA5A4'];
+function chart(key, pts, t0, t1, i) {
+  const W = 340, H = 150, P = 6;
+  const vals = pts.map((p) => Number(p.value));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const x = (ts) => P + ((ts - t0) / (t1 - t0)) * (W - 2 * P);
+  const y = (v) => H - P - ((v - lo) / (hi - lo)) * (H - 2 * P);
+  const sorted = [...pts].sort((a, b) => a.ts - b.ts);
+  const d = sorted.map((p, j) => `${j ? 'L' : 'M'}${x(p.ts).toFixed(1)},${y(Number(p.value)).toFixed(1)}`).join('');
+  const c = COLORS[i % COLORS.length];
+  const last = sorted[sorted.length - 1];
+  return `<div class="card chart"><h4><span>${esc(key)}</span><span class="muted">ล่าสุด <b style="color:${c}">${esc(last.value)}</b> · ต่ำสุด ${esc(Math.min(...vals))} · สูงสุด ${esc(Math.max(...vals))}</span></h4>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="${c}" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg></div>`;
+}
+
+$('csvTelemetry').addEventListener('click', () => {
+  const t = state.telemetry;
+  if (!t || !t.rows.length) return alert('ยังไม่มีข้อมูลให้ export');
+  const dev = state.devices.find((d) => d.id.id === $('tDev').value);
+  csv(`telemetry-${dev ? dev.name : 'device'}`, ['timestamp', 'time', ...t.keys], t.rows.map((r) => [r.ts, iso(r.ts), ...t.keys.map((k) => r[k] ?? '')]));
+});
+
+// ---------------------------------------------------------------- alarms
+$('aLoad').addEventListener('click', loadAlarms);
+$('aDev').addEventListener('change', loadAlarms);
+$('aStatus').addEventListener('change', renderAlarms);
+$('aRange').addEventListener('change', loadAlarms);
+
+const SEV = { CRITICAL: 'red', MAJOR: 'red', MINOR: 'amber', WARNING: 'amber', INDETERMINATE: 'grey' };
+
+async function loadAlarms() {
+  state.alarmsLoaded = true;
+  $('aTable').innerHTML = '<div class="empty"><span class="spin"></span></div>';
+  const ids = $('aDev').value === '*' ? state.devices.map((d) => d.id.id) : [$('aDev').value];
+  const span = Number($('aRange').value);
+  const time = span ? `&startTime=${Date.now() - span}&endTime=${Date.now()}` : '';
+  try {
+    const lists = await Promise.all(ids.map((id) => allPages(`/api/alarm/DEVICE/${id}?sortProperty=createdTime&sortOrder=DESC&fetchOriginator=true${time}`, 5)));
+    state.alarms = lists.flat().sort((a, b) => b.createdTime - a.createdTime);
+    renderAlarms();
+  } catch (err) {
+    $('aTable').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+const cleared = (a) => a.cleared === true || String(a.status || '').startsWith('CLEARED');
+const acked = (a) => a.acknowledged === true || String(a.status || '').endsWith('_ACK') && !String(a.status).endsWith('UNACK');
+
+function visibleAlarms() {
+  const f = $('aStatus').value;
+  return state.alarms.filter((a) => f === 'all' || (f === 'active' ? !cleared(a) : cleared(a)));
+}
+
+function renderAlarms() {
+  const list = visibleAlarms();
+  if (!list.length) { $('aTable').innerHTML = '<div class="empty">ไม่มี alarm ในช่วงนี้ 🎉</div>'; return; }
+  const devName = (a) => a.originatorName || (state.devices.find((d) => d.id.id === a.originator?.id) || {}).name || '';
+  $('aTable').innerHTML = `<table><thead><tr><th>เกิดเมื่อ</th><th>อุปกรณ์</th><th>ประเภท</th><th>ความรุนแรง</th><th>สถานะ</th><th>เคลียร์เมื่อ</th><th>รายละเอียด</th></tr></thead><tbody>${
+    list.map((a) => `<tr>
+      <td style="white-space:nowrap">${esc(fmt(a.createdTime || a.startTs))}</td>
+      <td>${esc(devName(a))}</td>
+      <td>${esc(a.type)}</td>
+      <td><span class="pill ${SEV[a.severity] || 'grey'}">${esc(a.severity)}</span></td>
+      <td>${cleared(a) ? '<span class="pill grey">Cleared</span>' : '<span class="pill red">Active</span>'} ${acked(a) ? '<span class="pill blue">Ack</span>' : ''}</td>
+      <td style="white-space:nowrap">${esc(cleared(a) ? fmt(a.clearTs || a.endTs) : '–')}</td>
+      <td class="muted" style="max-width:280px;word-break:break-word">${esc(a.details && Object.keys(a.details).length ? JSON.stringify(a.details) : '')}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+
+$('csvAlarms').addEventListener('click', () => {
+  const list = visibleAlarms();
+  if (!list.length) return alert('ยังไม่มีข้อมูลให้ export');
+  csv('alarms', ['created', 'device', 'type', 'severity', 'status', 'acknowledged', 'cleared', 'details'],
+    list.map((a) => [iso(a.createdTime || a.startTs), a.originatorName || '', a.type, a.severity, cleared(a) ? 'CLEARED' : 'ACTIVE', acked(a) ? 'yes' : 'no', cleared(a) ? iso(a.clearTs || a.endTs) : '', a.details ? JSON.stringify(a.details) : '']));
+});
+
+// ---------------------------------------------------------------- CSV
+const iso = (ts) => (ts ? new Date(Number(ts)).toISOString() : '');
+function csv(name, header, rows) {
+  const cell = (v) => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const text = '﻿' + [header, ...rows].map((r) => r.map(cell).join(',')).join('\n'); // BOM: Thai opens fine in Excel
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  a.download = `pebble-${name}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------------------------------------------------------------- auto refresh
+let timer = null;
+function stopAuto() { clearInterval(timer); timer = null; $('auto').checked = false; }
+$('auto').addEventListener('change', () => {
+  clearInterval(timer);
+  timer = $('auto').checked
+    ? setInterval(() => { if (tab === 'devices') loadDevices(); else if (tab === 'telemetry') loadTelemetry(); else loadAlarms(); }, 30000)
+    : null;
+});
+
+// ---------------------------------------------------------------- boot
+(async () => {
+  if (S.getItem('tb.token')) {
+    try { await start(); return; } catch { /* fall through to login */ }
+  }
+  $('login').classList.remove('hidden');
+})();
+</script>
+</body>
+</html>
