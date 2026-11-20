@@ -184,7 +184,8 @@
    Nothing secret lives in this file: you sign in with your ThingsBoard
    account, and the token is kept in sessionStorage until the tab closes.
    ===================================================================== */
-const DEFAULT_SERVER = 'https://demo.thingsboard.io';
+/** The Pebble backend relays /tb/api/* to demo.thingsboard.io (which blocks direct browser calls). */
+const DEFAULT_SERVER = 'https://colonist-alkalize-duo.ngrok-free.dev/tb';
 const S = sessionStorage;
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -198,7 +199,8 @@ const ago = (ts) => {
   return `${Math.round(s / 86400)} วันที่แล้ว`;
 };
 
-const state = { server: S.getItem('tb.server') || localStorage.getItem('tb.server') || DEFAULT_SERVER, user: null, devices: [], activity: {}, telemetry: null, alarms: [] };
+const savedServer = S.getItem('tb.server') || localStorage.getItem('tb.server');
+const state = { server: savedServer && !/demo\.thingsboard\.io/.test(savedServer) ? savedServer : DEFAULT_SERVER, user: null, devices: [], activity: {}, telemetry: null, alarms: [] };
 
 // ---------------------------------------------------------------- API
 class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
@@ -209,13 +211,18 @@ async function api(path, opts = {}, retried = false) {
   try {
     res = await fetch(state.server + path, {
       method: opts.method || 'GET',
-      headers: { 'Content-Type': 'application/json', ...(token && !opts.noAuth ? { 'X-Authorization': 'Bearer ' + token } : {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        // ngrok's free plan shows an HTML warning page to browsers unless this header is sent
+        'ngrok-skip-browser-warning': '1',
+        ...(token && !opts.noAuth ? { 'X-Authorization': 'Bearer ' + token } : {}),
+      },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     });
   } catch {
     throw new ApiError(0, /demo\.thingsboard\.io|thingsboard\.cloud/.test(state.server)
-      ? 'เซิร์ฟเวอร์นี้ไม่ให้เว็บอื่นเรียกตรง ๆ (CORS) ใส่ URL ของ relay (Cloudflare Worker) ที่ "เซิร์ฟเวอร์" ด้านล่างแทน'
-      : 'ติดต่อเซิร์ฟเวอร์ไม่ได้ เช็กอินเทอร์เน็ต หรือ URL ที่ "เซิร์ฟเวอร์"');
+      ? 'เซิร์ฟเวอร์นี้ไม่ให้เว็บอื่นเรียกตรง ๆ (CORS) ใช้ URL ของ backend Pebble ตามด้วย /tb ที่ "เซิร์ฟเวอร์" แทน'
+      : 'ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจว่า backend Pebble กับ ngrok บน Mac เปิดอยู่');
   }
   if (res.status === 401 && !opts.noAuth && !retried && (await refresh())) return api(path, opts, true);
   if (res.status === 401 && !opts.noAuth) { signOut('หมดเวลาเข้าสู่ระบบ เข้าใหม่อีกครั้ง'); throw new ApiError(401, 'Unauthorized'); }

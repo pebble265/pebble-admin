@@ -1,7 +1,10 @@
 # pebble(a) · Admin log viewer
 
-A single static page (`index.html`, no build step) that reads the robot's logs straight from
-**ThingsBoard** (`https://demo.thingsboard.io` by default):
+A single static page (`index.html`, no build step) that reads the robot's logs from
+**ThingsBoard** (`demo.thingsboard.io`). demo.thingsboard.io blocks direct calls from other
+websites (no CORS), so the page goes through the Pebble backend, which relays `/tb/api/*` to
+ThingsBoard (`apps/api/src/tb-relay`). The default server is the backend's ngrok URL + `/tb`;
+the backend (and ngrok) must be running for the page to work.
 
 - **อุปกรณ์**: every device, online/offline, last activity / connect / disconnect
 - **Telemetry**: every key the robot sends, by time range, as charts + a table
