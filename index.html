@@ -324,10 +324,7 @@ function showTab(name) {
 async function loadDevices() {
   $('devices').innerHTML = '<div class="empty"><span class="spin"></span></div>';
   try {
-    const path = state.user.authority === 'TENANT_ADMIN'
-      ? '/api/tenant/deviceInfos?sortProperty=name&sortOrder=ASC'
-      : `/api/customer/${state.user.customerId.id}/deviceInfos?sortProperty=name&sortOrder=ASC`;
-    state.devices = await allPages(path);
+    state.devices = await listDevices();
     await Promise.all(state.devices.map(async (d) => {
       try {
         const attrs = await api(`/api/plugins/telemetry/DEVICE/${d.id.id}/values/attributes/SERVER_SCOPE?keys=active,lastActivityTime,lastConnectTime,lastDisconnectTime`);
@@ -339,6 +336,33 @@ async function loadDevices() {
   } catch (err) {
     $('devices').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }
+}
+
+/**
+ * The device list lives at different addresses depending on the ThingsBoard edition
+ * (Community: /api/tenant/deviceInfos; Cloud / Professional: /api/deviceInfos/all, /api/user/devices).
+ * Try each until one answers, and remember which one worked.
+ */
+async function listDevices() {
+  const q = 'sortProperty=name&sortOrder=ASC';
+  const cid = state.user.customerId && state.user.customerId.id;
+  const candidates = state.user.authority === 'TENANT_ADMIN'
+    ? [`/api/tenant/deviceInfos?${q}`, `/api/deviceInfos/all?${q}`, `/api/user/devices?${q}`, `/api/tenant/devices?${q}`]
+    : [`/api/customer/${cid}/deviceInfos?${q}`, `/api/user/devices?${q}`, `/api/customer/${cid}/devices?${q}`];
+  const known = S.getItem('tb.devicesPath');
+  if (known && candidates.includes(known)) candidates.unshift(known);
+  let lastErr;
+  for (const path of [...new Set(candidates)]) {
+    try {
+      const list = await allPages(path);
+      S.setItem('tb.devicesPath', path);
+      return list;
+    } catch (err) {
+      if (err.status === 401) throw err;
+      lastErr = err; // 400 / 404 / 405: not this edition's address, try the next one
+    }
+  }
+  throw lastErr;
 }
 
 const isOnline = (d) => {
