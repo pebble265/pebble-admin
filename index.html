@@ -213,7 +213,9 @@ async function api(path, opts = {}, retried = false) {
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     });
   } catch {
-    throw new ApiError(0, 'ติดต่อ ThingsBoard ไม่ได้ (เช็กอินเทอร์เน็ต หรือเซิร์ฟเวอร์อาจไม่อนุญาตเว็บนี้ — CORS)');
+    throw new ApiError(0, /demo\.thingsboard\.io|thingsboard\.cloud/.test(state.server)
+      ? 'เซิร์ฟเวอร์นี้ไม่ให้เว็บอื่นเรียกตรง ๆ (CORS) ใส่ URL ของ relay (Cloudflare Worker) ที่ "เซิร์ฟเวอร์" ด้านล่างแทน'
+      : 'ติดต่อเซิร์ฟเวอร์ไม่ได้ เช็กอินเทอร์เน็ต หรือ URL ที่ "เซิร์ฟเวอร์"');
   }
   if (res.status === 401 && !opts.noAuth && !retried && (await refresh())) return api(path, opts, true);
   if (res.status === 401 && !opts.noAuth) { signOut('หมดเวลาเข้าสู่ระบบ เข้าใหม่อีกครั้ง'); throw new ApiError(401, 'Unauthorized'); }
